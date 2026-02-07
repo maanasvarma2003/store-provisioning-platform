@@ -56,7 +56,7 @@ export async function provisionWooCommerce(params: ProvisionWooCommerceParams): 
         await k8sClient.createLimitRange(namespace, 'store-limits', [
             {
                 type: 'Container',
-                default: {
+                _default: {
                     cpu: '500m',
                     memory: '512Mi',
                 },
