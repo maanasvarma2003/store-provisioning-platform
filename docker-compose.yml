@@ -36,10 +36,11 @@ services:
     ports:
       - "3000:3000"
     environment:
+      PORT: "3000"
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/store_platform
       REDIS_HOST: redis
       REDIS_PORT: 6379
-      NODE_ENV: development
+      NODE_ENV: production
       IN_CLUSTER: "false"
       BASE_DOMAIN: 127.0.0.1.nip.io
     depends_on:

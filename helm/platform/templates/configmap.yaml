@@ -9,3 +9,4 @@ data:
   BASE_DOMAIN: "{{ .Values.global.domain }}"
   NODE_ENV: "production"
   IN_CLUSTER: "true"
+  PORT: "3000"
