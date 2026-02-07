@@ -1,72 +1,26 @@
 # Complete Automated Deployment Script for Windows
-# Usage: .\deploy.ps1                    # Full K8s (kind + Helm) deploy
-#        .\deploy.ps1 -UseDockerCompose   # Docker Compose only (no Kubernetes)
 param(
     [switch]$SkipClusterCreation,
     [switch]$SkipBuild,
-    [switch]$SkipDeploy,
-    [switch]$UseDockerCompose
+    [switch]$SkipDeploy
 )
 
 $ErrorActionPreference = "Stop"
-$ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
-Set-Location $ProjectRoot
 
 Write-Host "`n========================================" -ForegroundColor Cyan
 Write-Host "Store Provisioning Platform - Automated Deployment" -ForegroundColor Cyan
 Write-Host "========================================`n" -ForegroundColor Cyan
 
-# Check Docker (required for both modes)
-try {
-    $null = docker --version 2>&1
-    Write-Host "  OK Docker installed" -ForegroundColor Green
-} catch {
-    Write-Host "  ERROR Docker not found. Please install Docker Desktop." -ForegroundColor Red
-    exit 1
-}
+# Check prerequisites
+Write-Host "Checking prerequisites..." -ForegroundColor Yellow
 
-if ($UseDockerCompose) {
-    Write-Host "`nMode: Docker Compose (no Kubernetes)`n" -ForegroundColor Cyan
-    Write-Host "Building images..." -ForegroundColor Yellow
-    docker build -t store-platform/api:latest ./api
-    docker build -t store-platform/dashboard:latest ./dashboard
-    docker build -t store-platform/orchestrator:latest ./orchestrator
-    Write-Host "Starting services..." -ForegroundColor Yellow
-    docker-compose up -d
-    Write-Host "Waiting for API to be ready..." -ForegroundColor Yellow
-    $maxAttempts = 30
-    $attempt = 0
-    while ($attempt -lt $maxAttempts) {
-        try {
-            $r = Invoke-WebRequest -Uri "http://localhost:3000/health" -UseBasicParsing -TimeoutSec 3 -ErrorAction Stop
-            if ($r.StatusCode -eq 200) { break }
-        } catch { }
-        $attempt++
-        Start-Sleep -Seconds 2
-    }
-    if ($attempt -ge $maxAttempts) {
-        Write-Host "  API did not become ready in time. Check: docker-compose logs api" -ForegroundColor Yellow
-    } else {
-        Write-Host "  API is ready!" -ForegroundColor Green
-    }
-    Write-Host "`nAccess URLs:" -ForegroundColor Cyan
-    Write-Host "  Dashboard: http://localhost:8080" -ForegroundColor Green
-    Write-Host "  API:       http://localhost:3000" -ForegroundColor Green
-    Write-Host "`nOpening dashboard..." -ForegroundColor Yellow
-    Start-Sleep -Seconds 2
-    Start-Process "http://localhost:8080"
-    Write-Host "`n========================================" -ForegroundColor Green
-    Write-Host "PLATFORM IS READY (Docker Compose)!" -ForegroundColor Green
-    Write-Host "========================================`n" -ForegroundColor Green
-    exit 0
-}
-
-# Kubernetes path: check prerequisites
 $prerequisites = @{
+    "Docker" = { docker --version }
     "kind" = { kind version }
     "kubectl" = { kubectl version --client }
     "helm" = { helm version }
 }
+
 $allPrereqsMet = $true
 foreach ($prereq in $prerequisites.GetEnumerator()) {
     try {
@@ -77,9 +31,13 @@ foreach ($prereq in $prerequisites.GetEnumerator()) {
         $allPrereqsMet = $false
     }
 }
+
 if (-not $allPrereqsMet) {
-    Write-Host "`nFor Kubernetes deploy, install: kind, kubectl, Helm." -ForegroundColor Red
-    Write-Host "Or run with -UseDockerCompose for Docker Compose only.`n" -ForegroundColor Yellow
+    Write-Host "`nMissing prerequisites. Please install:" -ForegroundColor Red
+    Write-Host "  Docker Desktop: https://www.docker.com/products/docker-desktop" -ForegroundColor White
+    Write-Host "  kind: https://kind.sigs.k8s.io/docs/user/quick-start/#installation" -ForegroundColor White
+    Write-Host "  kubectl: https://kubernetes.io/docs/tasks/tools/" -ForegroundColor White
+    Write-Host "  Helm: https://helm.sh/docs/intro/install/`n" -ForegroundColor White
     exit 1
 }
 
@@ -140,43 +98,25 @@ if (-not $SkipDeploy) {
     
     Write-Host "  Platform deployed!" -ForegroundColor Green
     
-    Write-Host "  Waiting for pods to be ready..." -ForegroundColor Yellow
-    kubectl wait --namespace store-platform --for=condition=ready pod -l app=api --timeout=120s 2>$null
-    kubectl wait --namespace store-platform --for=condition=ready pod -l app=dashboard --timeout=120s 2>$null
-    Write-Host "  Core pods ready!" -ForegroundColor Green
+    Write-Host "  Waiting for all pods to be ready..." -ForegroundColor Yellow
+    kubectl wait --namespace store-platform --for=condition=ready pod --all --timeout=300s
+    
+    Write-Host "  All pods ready!" -ForegroundColor Green
 }
 
 # Display status
 Write-Host "`nDeployment Status:" -ForegroundColor Cyan
-kubectl get pods -n store-platform 2>$null
-
-Write-Host "`nWaiting for API to respond..." -ForegroundColor Yellow
-$apiUrl = "http://api.127.0.0.1.nip.io/health"
-$maxAttempts = 40
-$attempt = 0
-while ($attempt -lt $maxAttempts) {
-    try {
-        $r = Invoke-WebRequest -Uri $apiUrl -UseBasicParsing -TimeoutSec 5 -ErrorAction Stop
-        if ($r.StatusCode -eq 200) {
-            Write-Host "  API is healthy!" -ForegroundColor Green
-            break
-        }
-    } catch { }
-    $attempt++
-    Start-Sleep -Seconds 3
-}
-if ($attempt -ge $maxAttempts) {
-    Write-Host "  API not yet reachable. Ingress may need a moment. Try: kubectl get pods -n store-platform" -ForegroundColor Yellow
-}
+kubectl get pods -n store-platform
 
 Write-Host "`nAccess URLs:" -ForegroundColor Cyan
 Write-Host "  Dashboard: http://dashboard.127.0.0.1.nip.io" -ForegroundColor Green
 Write-Host "  API: http://api.127.0.0.1.nip.io" -ForegroundColor Green
-Write-Host "  Health: http://api.127.0.0.1.nip.io/health" -ForegroundColor Green
+Write-Host "  Health Check: http://api.127.0.0.1.nip.io/health" -ForegroundColor Green
 
 Write-Host "`nDeployment Complete!" -ForegroundColor Green
 Write-Host "`nOpening dashboard in browser..." -ForegroundColor Yellow
-Start-Sleep -Seconds 3
+
+Start-Sleep -Seconds 5
 Start-Process "http://dashboard.127.0.0.1.nip.io"
 
 Write-Host "`n========================================" -ForegroundColor Green

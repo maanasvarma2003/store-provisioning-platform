@@ -1,60 +1,13 @@
 import axios from 'axios';
 
-/**
- * Resolve API base URL at runtime so the same build works locally and when deployed.
- * - Local dev (localhost / 127.0.0.1) → http://localhost:3001
- * - Deployed at dashboard.<domain> → http(s)://api.<domain>
- */
-function getApiBaseUrl(): string {
-    if (import.meta.env.VITE_API_URL) {
-        return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
-    }
-    if (typeof window === 'undefined') {
-        return 'http://localhost:3001';
-    }
-    const { hostname, protocol } = window.location;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return `${protocol === 'https:' ? 'https' : 'http'}://${hostname}:3000`;
-    }
-    if (hostname.startsWith('dashboard.')) {
-        return `${protocol}//api.${hostname.slice('dashboard.'.length)}`;
-    }
-    return `${protocol}//api.${hostname}`;
-}
-
-let API_BASE_URL = getApiBaseUrl();
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export const api = axios.create({
     baseURL: `${API_BASE_URL}/api`,
     headers: {
         'Content-Type': 'application/json',
     },
-    timeout: 15000,
 });
-
-/** Load config.json from same origin (when deployed) and apply apiUrl. Call before any API usage. */
-let configLoaded = false;
-export function initApiConfig(): Promise<void> {
-    if (configLoaded) return Promise.resolve();
-    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-    if (isLocal) {
-        configLoaded = true;
-        return Promise.resolve();
-    }
-    return fetch('/config.json', { cache: 'no-store' })
-        .then((r) => (r.ok ? r.json() : null))
-        .then((json: { apiUrl?: string } | null) => {
-            if (json?.apiUrl) {
-                const url = String(json.apiUrl).replace(/\/+$/, '');
-                API_BASE_URL = url;
-                api.defaults.baseURL = `${url}/api`;
-            }
-            configLoaded = true;
-        })
-        .catch(() => {
-            configLoaded = true;
-        });
-}
 
 export interface Store {
     id: string;

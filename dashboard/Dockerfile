@@ -13,10 +13,9 @@ COPY postcss.config.js ./
 # Install dependencies
 RUN npm ci
 
-# Copy source code and public assets (config.json for API URL)
+# Copy source code
 COPY index.html ./
 COPY src ./src
-COPY public ./public
 
 # Build
 RUN npm run build

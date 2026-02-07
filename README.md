@@ -8,30 +8,6 @@ This project demonstrates Kubernetes orchestration, Helm-based deployments, mult
 
 ---
 
-## One-command deploy
-
-**Option A – Docker Compose only (no Kubernetes):**
-
-```powershell
-.\deploy.ps1 -UseDockerCompose
-```
-
-- Builds API, Dashboard, Orchestrator; starts Postgres, Redis, API, Dashboard.
-- Dashboard: **http://localhost:8080** · API: **http://localhost:3000**
-
-**Option B – Full Kubernetes (kind + Helm):**
-
-```powershell
-.\deploy.ps1
-```
-
-- Creates kind cluster, builds images, deploys with Helm, waits for API health.
-- Dashboard: **http://dashboard.127.0.0.1.nip.io** · API: **http://api.127.0.0.1.nip.io**
-
-Requires: Docker, and for Option B also kind, kubectl, Helm.
-
----
-
 ## Architecture Overview
 
 The platform consists of four main components:

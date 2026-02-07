@@ -6,16 +6,10 @@ import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
+const PORT = 3001;
 
-// Enable CORS: allow dashboard and local dev origins so deployed dashboard can reach API
-const corsOptions = {
-    origin: true, // allow same-origin and common deployment patterns
-    credentials: false,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-};
-app.use(cors(corsOptions));
+// Enable CORS
+app.use(cors());
 app.use(express.json());
 
 // In-memory database
@@ -375,10 +369,10 @@ function createDemoStores() {
 // Initialize demo data
 createDemoStores();
 
-// Start server when not on Vercel (Vercel uses the exported app)
-if (!process.env.VERCEL) {
-    app.listen(PORT, '0.0.0.0', () => {
-        console.log(`\n🚀 API Server running on http://0.0.0.0:${PORT}`);
+// Start server only if not in Vercel environment
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    app.listen(PORT, () => {
+        console.log(`\n🚀 API Server running on http://localhost:${PORT}`);
         console.log(`✅ Health check: http://localhost:${PORT}/health`);
         console.log(`\nReady to handle requests.\n`);
     });
