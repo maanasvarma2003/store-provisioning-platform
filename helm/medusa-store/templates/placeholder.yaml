@@ -1,0 +1,8 @@
+# Medusa store templates will be implemented in Round 2
+# This is a placeholder to maintain the chart structure
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medusa-placeholder
+data:
+  message: "Medusa provisioning will be implemented in Round 2"

@@ -1,0 +1,31 @@
+{
+    "name": "orchestrator",
+    "version": "1.0.0",
+    "description": "Kubernetes orchestrator service for store provisioning",
+    "main": "dist/index.js",
+    "scripts": {
+        "dev": "tsx watch src/index.ts",
+        "build": "tsc",
+        "start": "node dist/index.js",
+        "test": "jest"
+    },
+    "dependencies": {
+        "@kubernetes/client-node": "^0.20.0",
+        "@prisma/client": "^5.22.0",
+        "bull": "^4.12.0",
+        "ioredis": "^5.3.2",
+        "winston": "^3.11.0",
+        "dotenv": "^16.3.1",
+        "js-yaml": "^4.1.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.10.6",
+        "@types/bull": "^4.10.0",
+        "@types/js-yaml": "^4.0.9",
+        "typescript": "^5.3.3",
+        "tsx": "^4.7.0",
+        "prisma": "^5.22.0",
+        "jest": "^29.7.0",
+        "@types/jest": "^29.5.11"
+    }
+}

@@ -1,0 +1,29 @@
+# Production values for VPS deployment
+global:
+  domain: "yourdomain.com"  # CHANGE THIS
+  storageClass: "local-path"
+
+postgresql:
+  image: "postgres:16-alpine"
+  database: "store_platform"
+  user: "postgres"
+  password: "CHANGE_THIS_PASSWORD"  # CHANGE THIS
+  persistence:
+    size: 20Gi
+
+redis:
+  image: "redis:7-alpine"
+  persistence:
+    size: 10Gi
+
+api:
+  image: "your-registry/store-platform-api:latest"  # CHANGE THIS
+  replicas: 2
+
+orchestrator:
+  image: "your-registry/store-platform-orchestrator:latest"  # CHANGE THIS
+  replicas: 2
+
+dashboard:
+  image: "your-registry/store-platform-dashboard:latest"  # CHANGE THIS
+  replicas: 2

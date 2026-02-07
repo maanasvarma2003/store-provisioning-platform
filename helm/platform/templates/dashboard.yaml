@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard
+  labels:
+    app: dashboard
+spec:
+  replicas: {{ .Values.dashboard.replicas }}
+  selector:
+    matchLabels:
+      app: dashboard
+  template:
+    metadata:
+      labels:
+        app: dashboard
+    spec:
+      containers:
+      - name: dashboard
+        image: {{ .Values.dashboard.image }}
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.dashboard.port }}
+          name: http
+        resources:
+          {{- toYaml .Values.dashboard.resources | nindent 10 }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard
+  labels:
+    app: dashboard
+spec:
+  type: ClusterIP
+  ports:
+  - port: {{ .Values.dashboard.port }}
+    targetPort: {{ .Values.dashboard.port }}
+    protocol: TCP
+    name: http
+  selector:
+    app: dashboard

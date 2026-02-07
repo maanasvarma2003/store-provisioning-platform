@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pvc
+  labels:
+    app: {{ .Values.storeName }}
+    component: mysql
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.mysql.persistence.size }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wordpress-pvc
+  labels:
+    app: {{ .Values.storeName }}
+    component: wordpress
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.storageClass }}
+  resources:
+    requests:
+      storage: {{ .Values.wordpress.persistence.size }}

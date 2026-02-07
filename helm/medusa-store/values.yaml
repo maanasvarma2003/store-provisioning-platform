@@ -1,0 +1,29 @@
+# Medusa Store Configuration (Stub for Round 2)
+storeName: "mystore"
+domain: "127.0.0.1.nip.io"
+storageClass: "standard"
+
+# Medusa Backend
+medusa:
+  image: "medusajs/medusa:latest"
+  replicas: 1
+  
+# PostgreSQL for Medusa
+postgresql:
+  image: "postgres:16-alpine"
+  database: "medusa"
+  user: "medusa"
+  
+# Redis for Medusa
+redis:
+  image: "redis:7-alpine"
+
+# Medusa Admin
+admin:
+  image: "medusajs/admin:latest"
+  replicas: 1
+
+# Medusa Storefront
+storefront:
+  image: "medusajs/storefront:latest"
+  replicas: 1

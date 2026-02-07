@@ -1,0 +1,66 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StoreStatus {
+  PROVISIONING
+  READY
+  FAILED
+  DELETING
+}
+
+enum StoreEngine {
+  WOOCOMMERCE
+  MEDUSA
+}
+
+model Store {
+  id          String       @id @default(uuid())
+  name        String
+  engine      StoreEngine
+  status      StoreStatus  @default(PROVISIONING)
+  namespace   String       @unique
+  url         String?
+  adminUrl    String?
+  adminUser   String?
+  adminPass   String?
+  failureReason String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  
+  events      ProvisioningEvent[]
+  
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ProvisioningEvent {
+  id        String   @id @default(uuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  event     String
+  message   String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+  
+  @@index([storeId])
+  @@index([createdAt])
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  apiKey    String   @unique
+  maxStores Int      @default(50)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

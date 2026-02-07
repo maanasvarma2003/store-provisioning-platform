@@ -1,0 +1,6 @@
+apiVersion: v2
+name: medusa-store
+description: Medusa ecommerce store Helm chart (Stub for Round 2)
+type: application
+version: 1.0.0
+appVersion: "2.0"

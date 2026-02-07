@@ -1,0 +1,45 @@
+# Store configuration
+storeName: "mystore"
+domain: "127.0.0.1.nip.io"
+storageClass: "standard"
+
+# WordPress configuration
+wordpress:
+  image: "wordpress:6-php8.2"
+  replicas: 1
+  adminUser: "admin"
+  adminEmail: "admin@example.com"
+  siteTitle: "My Store"
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  persistence:
+    size: 5Gi
+
+# MySQL configuration
+mysql:
+  image: "mysql:8.0"
+  database: "wordpress"
+  user: "wordpress"
+  
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  
+  persistence:
+    size: 5Gi
+
+# WooCommerce configuration
+woocommerce:
+  enabled: true
+  version: "latest"

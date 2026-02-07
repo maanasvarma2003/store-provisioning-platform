@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgresql
+  labels:
+    app: postgresql
+spec:
+  serviceName: postgresql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgresql
+  template:
+    metadata:
+      labels:
+        app: postgresql
+    spec:
+      containers:
+      - name: postgresql
+        image: {{ .Values.postgresql.image }}
+        env:
+        - name: POSTGRES_DB
+          value: {{ .Values.postgresql.database }}
+        - name: POSTGRES_USER
+          value: {{ .Values.postgresql.user }}
+        - name: POSTGRES_PASSWORD
+          value: {{ .Values.postgresql.password }}
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        ports:
+        - containerPort: 5432
+          name: postgresql
+        volumeMounts:
+        - name: postgresql-data
+          mountPath: /var/lib/postgresql/data
+        resources:
+          {{- toYaml .Values.postgresql.resources | nindent 10 }}
+  volumeClaimTemplates:
+  - metadata:
+      name: postgresql-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: {{ .Values.global.storageClass }}
+      resources:
+        requests:
+          storage: {{ .Values.postgresql.persistence.size }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql
+  labels:
+    app: postgresql
+spec:
+  ports:
+  - port: 5432
+    targetPort: 5432
+  selector:
+    app: postgresql
+  clusterIP: None

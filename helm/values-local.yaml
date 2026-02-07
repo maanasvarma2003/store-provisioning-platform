@@ -1,0 +1,29 @@
+# Local development values
+global:
+  domain: "127.0.0.1.nip.io"
+  storageClass: "standard"
+
+postgresql:
+  image: "postgres:16-alpine"
+  database: "store_platform"
+  user: "postgres"
+  password: "postgres"
+  persistence:
+    size: 10Gi
+
+redis:
+  image: "redis:7-alpine"
+  persistence:
+    size: 5Gi
+
+api:
+  image: "store-platform/api:latest"
+  replicas: 1
+
+orchestrator:
+  image: "store-platform/orchestrator:latest"
+  replicas: 1
+
+dashboard:
+  image: "store-platform/dashboard:latest"
+  replicas: 1

@@ -1,0 +1,29 @@
+{
+  "name": "store-provisioning-platform",
+  "version": "1.0.0",
+  "description": "Kubernetes-native multi-tenant ecommerce provisioning platform",
+  "private": true,
+  "workspaces": [
+    "dashboard",
+    "api",
+    "orchestrator"
+  ],
+  "scripts": {
+    "install:all": "npm install && cd dashboard && npm install && cd ../api && npm install && cd ../orchestrator && npm install",
+    "build:all": "npm run build --workspaces",
+    "dev:dashboard": "npm run dev --workspace=dashboard",
+    "dev:api": "npm run dev --workspace=api",
+    "dev:orchestrator": "npm run dev --workspace=orchestrator",
+    "docker:build": "docker build -t store-platform/dashboard:latest ./dashboard && docker build -t store-platform/api:latest ./api && docker build -t store-platform/orchestrator:latest ./orchestrator",
+    "clean": "rm -rf node_modules dashboard/node_modules api/node_modules orchestrator/node_modules"
+  },
+  "keywords": [
+    "kubernetes",
+    "helm",
+    "ecommerce",
+    "provisioning",
+    "multi-tenant"
+  ],
+  "author": "",
+  "license": "MIT"
+}

@@ -1,0 +1,84 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: orchestrator
+  labels:
+    app: orchestrator
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: orchestrator-role
+rules:
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list", "create", "delete"]
+- apiGroups: [""]
+  resources: ["secrets", "configmaps", "services", "persistentvolumeclaims"]
+  verbs: ["get", "list", "create", "update", "delete"]
+- apiGroups: [""]
+  resources: ["pods", "pods/log"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "statefulsets"]
+  verbs: ["get", "list", "create", "update", "delete"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["ingresses", "networkpolicies"]
+  verbs: ["get", "list", "create", "update", "delete"]
+- apiGroups: [""]
+  resources: ["resourcequotas", "limitranges"]
+  verbs: ["get", "list", "create", "update", "delete"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["get", "list", "create", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: orchestrator-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: orchestrator-role
+subjects:
+- kind: ServiceAccount
+  name: orchestrator
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orchestrator
+  labels:
+    app: orchestrator
+spec:
+  replicas: {{ .Values.orchestrator.replicas }}
+  selector:
+    matchLabels:
+      app: orchestrator
+  template:
+    metadata:
+      labels:
+        app: orchestrator
+    spec:
+      serviceAccountName: orchestrator
+      initContainers:
+      - name: wait-for-redis
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          until nc -z redis 6379; do
+            echo "Waiting for Redis..."
+            sleep 2
+          done
+      containers:
+      - name: orchestrator
+        image: {{ .Values.orchestrator.image }}
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        - configMapRef:
+            name: platform-config
+        resources:
+          {{- toYaml .Values.orchestrator.resources | nindent 10 }}
