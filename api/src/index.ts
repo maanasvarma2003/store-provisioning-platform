@@ -8,8 +8,14 @@ import { v4 as uuidv4 } from 'uuid';
 const app = express();
 const PORT = 3001;
 
-// Enable CORS
-app.use(cors());
+// Enable CORS: allow dashboard and local dev origins so deployed dashboard can reach API
+const corsOptions = {
+    origin: true, // allow same-origin and common deployment patterns
+    credentials: false,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // In-memory database

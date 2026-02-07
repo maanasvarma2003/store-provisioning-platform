@@ -1,12 +1,35 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+/**
+ * Resolve API base URL at runtime so the same build works locally and when deployed.
+ * - Local dev (localhost / 127.0.0.1) → http://localhost:3001
+ * - Deployed at dashboard.<domain> → http(s)://api.<domain>
+ */
+function getApiBaseUrl(): string {
+    if (import.meta.env.VITE_API_URL) {
+        return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
+    }
+    if (typeof window === 'undefined') {
+        return 'http://localhost:3001';
+    }
+    const { hostname, protocol } = window.location;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+        return `${protocol === 'https:' ? 'https' : 'http'}://${hostname}:3001`;
+    }
+    if (hostname.startsWith('dashboard.')) {
+        return `${protocol}//api.${hostname.slice('dashboard.'.length)}`;
+    }
+    return `${protocol}//api.${hostname}`;
+}
+
+const API_BASE_URL = getApiBaseUrl();
 
 export const api = axios.create({
     baseURL: `${API_BASE_URL}/api`,
     headers: {
         'Content-Type': 'application/json',
     },
+    timeout: 15000,
 });
 
 export interface Store {
