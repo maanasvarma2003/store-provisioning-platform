@@ -14,7 +14,7 @@ function getApiBaseUrl(): string {
     }
     const { hostname, protocol } = window.location;
     if (hostname === 'localhost' || hostname === '127.0.0.1') {
-        return `${protocol === 'https:' ? 'https' : 'http'}://${hostname}:3001`;
+        return `${protocol === 'https:' ? 'https' : 'http'}://${hostname}:3000`;
     }
     if (hostname.startsWith('dashboard.')) {
         return `${protocol}//api.${hostname.slice('dashboard.'.length)}`;
@@ -22,7 +22,7 @@ function getApiBaseUrl(): string {
     return `${protocol}//api.${hostname}`;
 }
 
-const API_BASE_URL = getApiBaseUrl();
+let API_BASE_URL = getApiBaseUrl();
 
 export const api = axios.create({
     baseURL: `${API_BASE_URL}/api`,
@@ -31,6 +31,30 @@ export const api = axios.create({
     },
     timeout: 15000,
 });
+
+/** Load config.json from same origin (when deployed) and apply apiUrl. Call before any API usage. */
+let configLoaded = false;
+export function initApiConfig(): Promise<void> {
+    if (configLoaded) return Promise.resolve();
+    const isLocal = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+    if (isLocal) {
+        configLoaded = true;
+        return Promise.resolve();
+    }
+    return fetch('/config.json', { cache: 'no-store' })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((json: { apiUrl?: string } | null) => {
+            if (json?.apiUrl) {
+                const url = String(json.apiUrl).replace(/\/+$/, '');
+                API_BASE_URL = url;
+                api.defaults.baseURL = `${url}/api`;
+            }
+            configLoaded = true;
+        })
+        .catch(() => {
+            configLoaded = true;
+        });
+}
 
 export interface Store {
     id: string;
