@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medusa-backend
+  labels:
+    app: medusa-backend
+    app.kubernetes.io/instance: store-{{ .Values.storeName }}
+spec:
+  replicas: {{ .Values.medusa.replicas }}
+  selector:
+    matchLabels:
+      app: medusa-backend
+  template:
+    metadata:
+      labels:
+        app: medusa-backend
+        app.kubernetes.io/instance: store-{{ .Values.storeName }}
+    spec:
+      initContainers:
+      - name: wait-for-postgres
+        image: busybox:1.36
+        command: ['sh', '-c', 'until nc -z postgres 5432; do echo waiting for postgres; sleep 2; done;']
+      - name: wait-for-redis
+        image: busybox:1.36
+        command: ['sh', '-c', 'until nc -z redis 6379; do echo waiting for redis; sleep 2; done;']
+      containers:
+      - name: medusa-backend
+        image: {{ .Values.medusa.image }}
+        ports:
+        - containerPort: 9000
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: DATABASE_TYPE
+          value: "postgres"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-credentials
+              key: postgres-password
+        - name: REDIS_HOST
+          value: "redis"
+        - name: DATABASE_URL
+          value: "postgres://{{ .Values.postgresql.user }}:$(POSTGRES_PASSWORD)@postgres:5432/{{ .Values.postgresql.database }}"
+        - name: REDIS_URL
+          value: "redis://redis:6379"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: medusa-secrets
+              key: jwt-secret
+        - name: COOKIE_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: medusa-secrets
+              key: cookie-secret
+        - name: STORE_CORS
+          value: "http://{{ .Values.storeName }}.{{ .Values.domain }},http://{{ .Values.storeName }}-admin.{{ .Values.domain }}"
+        - name: ADMIN_CORS
+          value: "http://{{ .Values.storeName }}-admin.{{ .Values.domain }}"
+        command:
+        - sh
+        - -c
+        - |
+          npx medusa migrations run && \
+          npx medusa seed -f ./data/seed.json || true && \
+          npx medusa user -e {{ .Values.medusa.adminEmail }} -p $(cat /run/secrets/admin-password) || true && \
+          npx medusa develop
+        volumeMounts:
+        - name: admin-secret
+          mountPath: /run/secrets
+          readOnly: true
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 9000
+          initialDelaySeconds: 120
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 9000
+          initialDelaySeconds: 60
+          periodSeconds: 5
+      volumes:
+      - name: admin-secret
+        secret:
+          secretName: medusa-secrets
+          items:
+          - key: admin-password
+            path: admin-password

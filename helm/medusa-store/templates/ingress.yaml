@@ -1,0 +1,70 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: medusa-storefront-ingress
+  labels:
+    app: medusa-storefront
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: {{ .Values.storeName }}.{{ .Values.domain }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: medusa-storefront
+            port:
+              number: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: medusa-admin-ingress
+  labels:
+    app: medusa-admin
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: {{ .Values.storeName }}-admin.{{ .Values.domain }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: medusa-admin
+            port:
+              number: 7001
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: medusa-backend-ingress
+  labels:
+    app: medusa-backend
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "http://{{ .Values.storeName }}.{{ .Values.domain }},http://{{ .Values.storeName }}-admin.{{ .Values.domain }}"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: {{ .Values.storeName }}-backend.{{ .Values.domain }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: medusa-backend
+            port:
+              number: 9000

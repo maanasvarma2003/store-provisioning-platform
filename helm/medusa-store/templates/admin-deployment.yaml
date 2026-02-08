@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medusa-admin
+  labels:
+    app: medusa-admin
+    app.kubernetes.io/instance: store-{{ .Values.storeName }}
+spec:
+  replicas: {{ .Values.admin.replicas }}
+  selector:
+    matchLabels:
+      app: medusa-admin
+  template:
+    metadata:
+      labels:
+        app: medusa-admin
+        app.kubernetes.io/instance: store-{{ .Values.storeName }}
+    spec:
+      containers:
+      - name: medusa-admin
+        image: {{ .Values.admin.image }}
+        ports:
+        - containerPort: 7001
+          name: http
+        env:
+        - name: MEDUSA_BACKEND_URL
+          value: "http://medusa-backend:9000"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

@@ -1,71 +1,72 @@
-# Global configuration
-global:
-  domain: "127.0.0.1.nip.io"
-  storageClass: "standard"
+# Default values for platform.
 
-# PostgreSQL configuration
-postgresql:
-  image: "postgres:16-alpine"
-  database: "store_platform"
-  user: "postgres"
-  password: "postgres"
-  persistence:
-    size: 10Gi
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
+domain: 127.0.0.1.nip.io
 
-# Redis configuration
-redis:
-  image: "redis:7-alpine"
-  persistence:
-    size: 5Gi
-  resources:
-    requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
-      cpu: 200m
-      memory: 256Mi
-
-# API service configuration
 api:
-  image: "store-platform/api:latest"
-  replicas: 1
-  port: 3000
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
+  image:
+    repository: api
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  service:
+    type: ClusterIP
+    port: 3000
+  env:
+    NODE_ENV: production
 
-# Orchestrator service configuration
-orchestrator:
-  image: "store-platform/orchestrator:latest"
-  replicas: 1
-  resources:
-    requests:
-      cpu: 100m
-      memory: 256Mi
-    limits:
-      cpu: 500m
-      memory: 512Mi
-
-# Dashboard configuration
 dashboard:
-  image: "store-platform/dashboard:latest"
-  replicas: 1
-  port: 80
-  resources:
-    requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
-      cpu: 200m
-      memory: 256Mi
+  image:
+    repository: dashboard
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  service:
+    type: ClusterIP
+    port: 80
+  env:
+    VITE_API_URL: http://api.default.svc.cluster.local:3000
+
+orchestrator:
+  image:
+    repository: orchestrator
+    pullPolicy: IfNotPresent
+    tag: "latest"
+  service:
+    type: ClusterIP
+    port: 4000
+  serviceAccount:
+    create: true
+    name: "orchestrator"
+
+postgresql:
+  enabled: true
+  auth:
+    postgresPassword: "postgres"
+    database: "store_platform"
+  primary:
+    persistence:
+      enabled: true
+      size: 1Gi
+
+redis:
+  enabled: true
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: true
+      size: 1Gi
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: dashboard.127.0.0.1.nip.io
+      paths:
+        - path: /
+          pathType: Prefix
+          service: dashboard
+    - host: api.127.0.0.1.nip.io
+      paths:
+        - path: /
+          pathType: Prefix
+          service: api

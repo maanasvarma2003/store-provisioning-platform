@@ -163,6 +163,60 @@ Default credentials are stored in Kubernetes Secrets. The order should appear in
 
 ---
 
+## End-to-End Testing
+
+The platform includes automated E2E tests using Playwright for both WooCommerce and Medusa.
+
+### Setup
+
+```bash
+cd e2e-tests
+npm install
+npx playwright install chromium
+```
+
+### Run All Tests
+
+```bash
+make test-e2e
+# or
+npm run test:e2e
+```
+
+### WooCommerce Test
+
+```bash
+make test-woocommerce
+# or
+npm run test:e2e:woo
+```
+
+### Medusa Test
+
+```bash
+make test-medusa
+# or
+npm run test:e2e:medusa
+```
+
+### Test Features
+
+- ✅ Automated store provisioning
+- ✅ Product browsing and cart operations
+- ✅ Complete checkout flow
+- ✅ Order verification in admin
+- ✅ Automatic cleanup after tests
+- ✅ Screenshots and videos on failure
+- ✅ HTML test reports
+
+### View Test Results
+
+```bash
+cd e2e-tests
+npm run report
+```
+
+
 ## Deleting a Store
 
 From dashboard:

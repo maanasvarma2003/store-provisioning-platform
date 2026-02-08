@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: medusa-storefront
+  labels:
+    app: medusa-storefront
+    app.kubernetes.io/instance: store-{{ .Values.storeName }}
+spec:
+  replicas: {{ .Values.storefront.replicas }}
+  selector:
+    matchLabels:
+      app: medusa-storefront
+  template:
+    metadata:
+      labels:
+        app: medusa-storefront
+        app.kubernetes.io/instance: store-{{ .Values.storeName }}
+    spec:
+      containers:
+      - name: medusa-storefront
+        image: {{ .Values.storefront.image }}
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: NEXT_PUBLIC_MEDUSA_BACKEND_URL
+          value: "http://{{ .Values.storeName }}-backend.{{ .Values.domain }}"
+        - name: MEDUSA_BACKEND_URL
+          value: "http://medusa-backend:9000"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

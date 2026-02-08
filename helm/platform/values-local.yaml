@@ -1,0 +1,30 @@
+# Values for Local Minikube environment
+
+domain: 127.0.0.1.nip.io
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+
+postgresql:
+  persistence:
+    enabled: true
+    size: 1Gi
+  primary:
+    service:
+      type: ClusterIP
+
+redis:
+  master:
+    persistence:
+      enabled: false
+
+# Orchestrator runs in-cluster for local K8s
+orchestrator:
+  image:
+    tag: "latest"
+  env:
+    IN_CLUSTER: "true"
+    API_URL: "http://api:3000"

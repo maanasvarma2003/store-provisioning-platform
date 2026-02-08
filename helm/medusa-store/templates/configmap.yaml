@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: medusa-backend-config
+  labels:
+    app: medusa-backend
+data:
+  DATABASE_TYPE: "postgres"
+  REDIS_URL: "redis://$(REDIS_HOST):6379"
+  DATABASE_URL: "postgres://{{ .Values.postgresql.user }}:$(POSTGRES_PASSWORD)@postgres:5432/{{ .Values.postgresql.database }}"
+  STORE_CORS: "http://{{ .Values.storeName }}.{{ .Values.domain }},http://{{ .Values.storeName }}-admin.{{ .Values.domain }}"
+  ADMIN_CORS: "http://{{ .Values.storeName }}-admin.{{ .Values.domain }}"

@@ -69,3 +69,19 @@ port-forward: ## Port forward to services
 	kubectl port-forward -n store-platform svc/dashboard 3000:80 &
 	@echo "Port forwarding API to localhost:4000..."
 	kubectl port-forward -n store-platform svc/api 4000:3000 &
+
+test-e2e: ## Run end-to-end tests
+	@echo "Running E2E tests..."
+	cd e2e-tests && npm install && npm test
+
+test-woocommerce: ## Test WooCommerce E2E flow
+	@echo "Running WooCommerce E2E test..."
+	cd e2e-tests && npm install && npm run test:woocommerce
+
+test-medusa: ## Test Medusa E2E flow
+	@echo "Running Medusa E2E test..."
+	cd e2e-tests && npm install && npm run test:medusa
+
+test-e2e-ui: ## Run E2E tests with UI
+	@echo "Running E2E tests with UI..."
+	cd e2e-tests && npm install && npm run test:ui

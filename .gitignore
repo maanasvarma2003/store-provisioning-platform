@@ -54,3 +54,11 @@ coverage/
 # Temporary files
 tmp/
 temp/
+
+# Local Tools & Data
+tools/
+data/
+*.zip
+*.exe
+*.log
+orchestrator/orchestrator_error.log

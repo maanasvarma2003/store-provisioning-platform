@@ -1,0 +1,34 @@
+# Values for Production VPS environment
+
+domain: store-platform.com
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  tls:
+    - hosts:
+        - dashboard.store-platform.com
+        - api.store-platform.com
+      secretName: platform-tls
+
+postgresql:
+  persistence:
+    enabled: true
+    size: 10Gi
+  primary:
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+
+redis:
+  master:
+    persistence:
+      enabled: true
+      size: 5Gi
+
+orchestrator:
+  env:
+    IN_CLUSTER: "true"

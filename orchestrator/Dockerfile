@@ -1,44 +1,22 @@
-# Build stage
-FROM node:20-alpine AS builder
+FROM node:18-alpine
 
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
-COPY tsconfig.json ./
+# Install Helm
+RUN apk add --no-cache curl openssl \
+    && curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 \
+    && chmod 700 get_helm.sh \
+    && ./get_helm.sh \
+    && rm get_helm.sh
 
-# Install dependencies
+COPY package*.json ./
 RUN npm ci
 
-# Copy source code
-COPY src ./src
+COPY . .
 
-# Build
+# Copy Helm charts
+COPY ../helm /app/helm
+
 RUN npm run build
 
-# Production stage
-FROM node:20-alpine
-
-WORKDIR /app
-
-# Install helm
-RUN apk add --no-cache curl bash && \
-    curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-
-# Copy package files
-COPY package*.json ./
-
-# Install production dependencies only
-RUN npm ci --only=production
-
-# Copy built files
-COPY --from=builder /app/dist ./dist
-COPY prisma ./prisma
-
-# Generate Prisma client
-RUN npx prisma generate
-
-# Run as non-root user
-USER node
-
-CMD ["node", "dist/index.js"]
+CMD ["npm", "start"]
