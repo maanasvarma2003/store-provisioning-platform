@@ -27,23 +27,7 @@ React Dashboard  →  API Service  →  Orchestrator  →  Kubernetes Cluster
 
 ---
 
-## Repository Structure
 
-```
-store-provisioning-platform/
-│
-├── dashboard/
-├── api/
-├── orchestrator/
-├── helm/
-│   ├── platform/
-│   ├── wordpress-store/
-│   └── medusa-store/
-│
-├── infra/
-├── scripts/
-└── README.md
-```
 
 ---
 
