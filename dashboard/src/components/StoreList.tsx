@@ -2,21 +2,16 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { storeApi, Store } from '../api/client';
 import { Plus, Trash2, ExternalLink, RefreshCw, AlertCircle, CheckCircle, Clock, Loader, Info, AlertTriangle } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 
 const StoreList = () => {
     const queryClient = useQueryClient();
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [storeToDelete, setStoreToDelete] = useState<{ id: string; name: string } | null>(null);
-    const [isDemoMode, setIsDemoMode] = useState(false);
-
     const { data, isLoading, error, refetch } = useQuery({
         queryKey: ['stores'],
         queryFn: async () => {
             const result = await storeApi.getStores();
-            // Check if we're in demo mode by looking at store IDs
-            const demoMode = result.stores.some(s => s.id.startsWith('demo-'));
-            setIsDemoMode(demoMode);
             return result;
         },
         refetchInterval: 5000,
@@ -100,48 +95,14 @@ const StoreList = () => {
 
     return (
         <div className="space-y-6">
-            {/* Demo Mode Warning Banner */}
-            {isDemoMode && (
-                <div className="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-lg p-6 shadow-sm">
-                    <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0">
-                            <div className="bg-amber-100 p-2 rounded-full">
-                                <AlertTriangle className="w-6 h-6 text-amber-600" />
-                            </div>
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="text-lg font-bold text-amber-900 mb-2">
-                                🎭 Demo Mode Active - Sample Data Only
-                            </h3>
-                            <p className="text-amber-800 mb-3">
-                                You're viewing <strong>sample stores with fake URLs</strong> for demonstration purposes only.
-                                These stores don't actually exist and the links won't work.
-                            </p>
-                            <div className="bg-white border border-amber-200 rounded-lg p-4 mb-3">
-                                <p className="text-sm font-semibold text-amber-900 mb-2">
-                                    🚀 To Create REAL Stores with REAL Working URLs:
-                                </p>
-                                <ol className="text-sm text-amber-800 space-y-1 list-decimal list-inside">
-                                    <li>Install Docker Desktop from <a href="https://www.docker.com/products/docker-desktop/" target="_blank" rel="noopener noreferrer" className="underline font-medium">docker.com</a></li>
-                                    <li>Run: <code className="bg-amber-100 px-2 py-0.5 rounded font-mono">.\deploy-docker.ps1</code></li>
-                                    <li>Create a real store from this dashboard</li>
-                                    <li>Get real URLs like: <code className="bg-amber-100 px-2 py-0.5 rounded font-mono">http://mystore.127.0.0.1.nip.io</code></li>
-                                </ol>
-                            </div>
-                            <p className="text-xs text-amber-700">
-                                📖 See <code>HOW_TO_RUN_E2E.md</code> and <code>WINDOWS_SETUP.md</code> for detailed instructions
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            )}
+
 
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-gray-900">Stores</h1>
                     <p className="mt-1 text-sm text-gray-500">
-                        {isDemoMode ? 'Sample stores (demo data)' : 'Manage your ecommerce stores'}
+                        Manage your ecommerce stores
                     </p>
                 </div>
                 <div className="flex gap-3">
@@ -211,15 +172,8 @@ const StoreList = () => {
                     {stores.map((store) => (
                         <div
                             key={store.id}
-                            className={`bg-white rounded-lg shadow-sm border-2 p-6 hover:shadow-md transition-shadow ${isDemoMode ? 'border-amber-200' : 'border-gray-200'
-                                }`}
+                            className="bg-white rounded-lg shadow-sm border-2 border-gray-200 p-6 hover:shadow-md transition-shadow"
                         >
-                            {isDemoMode && (
-                                <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-1 rounded">
-                                    <Info className="w-3 h-3" />
-                                    DEMO STORE - FAKE URL
-                                </div>
-                            )}
 
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex-1">
@@ -234,20 +188,13 @@ const StoreList = () => {
                             {store.url && (
                                 <div className="mb-3">
                                     <a
-                                        href={!isDemoMode ? store.url : '#'}
-                                        target={!isDemoMode ? "_blank" : undefined}
-                                        rel={!isDemoMode ? "noopener noreferrer" : undefined}
-                                        onClick={isDemoMode ? (e) => {
-                                            e.preventDefault();
-                                            alert('⚠️ Demo Mode: This is a fake URL for demonstration.\n\nTo get real working URLs:\n1. Install Docker Desktop\n2. Run: .\\deploy-docker.ps1\n3. Create a real store\n\nSee HOW_TO_RUN_E2E.md for details.');
-                                        } : undefined}
-                                        className={`inline-flex items-center gap-1 text-sm font-medium ${isDemoMode
-                                            ? 'text-gray-400 cursor-not-allowed'
-                                            : 'text-primary-600 hover:text-primary-700'
-                                            }`}
+                                        href={store.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-sm font-medium text-primary-600 hover:text-primary-700"
                                     >
                                         <ExternalLink className="w-4 h-4" />
-                                        {isDemoMode ? 'Visit Store (demo)' : 'Visit Store'}
+                                        Visit Store
                                     </a>
                                 </div>
                             )}
@@ -258,12 +205,10 @@ const StoreList = () => {
                                         Custom Domain
                                     </span>
                                     <a
-                                        href={!isDemoMode ? `http://${store.customDomain}` : '#'}
-                                        target={!isDemoMode ? "_blank" : undefined}
-                                        rel={!isDemoMode ? "noopener noreferrer" : undefined}
-                                        onClick={isDemoMode ? (e) => e.preventDefault() : undefined}
-                                        className={`inline-flex items-center gap-1 text-sm font-medium ${isDemoMode ? 'text-gray-400' : 'text-gray-900 hover:text-primary-600'
-                                            }`}
+                                        href={`http://${store.customDomain}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-sm font-medium text-gray-900 hover:text-primary-600"
                                     >
                                         {store.customDomain}
                                     </a>
@@ -273,15 +218,13 @@ const StoreList = () => {
                             {store.adminUrl && (
                                 <div className="mb-3">
                                     <a
-                                        href={!isDemoMode ? store.adminUrl : '#'}
-                                        target={!isDemoMode ? "_blank" : undefined}
-                                        rel={!isDemoMode ? "noopener noreferrer" : undefined}
-                                        onClick={isDemoMode ? (e) => e.preventDefault() : undefined}
-                                        className={`inline-flex items-center gap-1 text-sm ${isDemoMode ? 'text-gray-400' : 'text-gray-600 hover:text-gray-700'
-                                            }`}
+                                        href={store.adminUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-gray-700"
                                     >
                                         <ExternalLink className="w-4 h-4" />
-                                        Admin Panel {isDemoMode && '(demo)'}
+                                        Admin Panel
                                     </a>
                                 </div>
                             )}
@@ -293,18 +236,18 @@ const StoreList = () => {
                             )}
 
                             <div className="text-xs text-gray-500 mb-4">
-                                Created {formatDistanceToNow(new Date(store.createdAt), { addSuffix: true })}
+                                <div className="font-medium">Time: {format(new Date(store.createdAt), 'HH:mm:ss')}</div>
+                                <div>Date: {format(new Date(store.createdAt), 'dd MMM yyyy')}</div>
                             </div>
 
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => handleDelete(store.id, store.name)}
-                                    disabled={deleteMutation.isPending || store.status === 'DELETING' || isDemoMode}
+                                    disabled={deleteMutation.isPending || store.status === 'DELETING'}
                                     className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 bg-white hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                    title={isDemoMode ? 'Demo stores cannot be deleted' : 'Delete store'}
                                 >
                                     <Trash2 className="w-4 h-4" />
-                                    {isDemoMode ? 'Delete (demo)' : 'Delete'}
+                                    Delete
                                 </button>
                             </div>
                         </div>
@@ -314,7 +257,7 @@ const StoreList = () => {
 
             {/* Create Store Modal */}
             {showCreateForm && (
-                <CreateStoreModal onClose={() => setShowCreateForm(false)} isDemoMode={isDemoMode} />
+                <CreateStoreModal onClose={() => setShowCreateForm(false)} />
             )}
 
             {/* Delete Confirmation Modal */}
@@ -384,7 +327,7 @@ const DeleteConfirmationModal = ({
     );
 };
 
-const CreateStoreModal = ({ onClose, isDemoMode }: { onClose: () => void; isDemoMode: boolean }) => {
+const CreateStoreModal = ({ onClose }: { onClose: () => void }) => {
     const queryClient = useQueryClient();
     const [name, setName] = useState('');
     const [engine, setEngine] = useState<'WOOCOMMERCE' | 'MEDUSA'>('WOOCOMMERCE');
@@ -407,12 +350,6 @@ const CreateStoreModal = ({ onClose, isDemoMode }: { onClose: () => void; isDemo
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">Create New Store</h2>
-
-                {isDemoMode && (
-                    <div className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-sm text-amber-800">
-                        <strong>⚠️ Demo Mode:</strong> Backend required to create stores. Install Docker and run <code className="bg-amber-100 px-1 rounded">.\deploy-docker.ps1</code>
-                    </div>
-                )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div>
@@ -479,7 +416,7 @@ const CreateStoreModal = ({ onClose, isDemoMode }: { onClose: () => void; isDemo
                         </button>
                         <button
                             type="submit"
-                            disabled={createMutation.isPending || !name || isDemoMode}
+                            disabled={createMutation.isPending || !name}
                             className="flex-1 px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {createMutation.isPending ? 'Creating...' : 'Create Store'}

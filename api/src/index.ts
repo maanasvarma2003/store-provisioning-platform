@@ -4,6 +4,7 @@
 import express from 'express';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
+import Bull from 'bull';
 
 const app = express();
 const PORT = 3001;
@@ -53,54 +54,31 @@ const stores: Map<string, Store> = new Map();
 const events: Map<string, ProvisioningEvent[]> = new Map();
 const auditLogs: AuditLog[] = [];
 
-// Helper function to simulate provisioning
-function simulateProvisioning(storeId: string) {
-    setTimeout(() => {
-        const store = stores.get(storeId);
-        if (store && store.status === 'PROVISIONING') {
-            // Failure simulation disabled (Commented out for Vercel stability)
+// Initialize Bull queue for Orchestrator communication
+const provisioningQueue = new Bull('provisioning', {
+    redis: {
+        host: 'localhost',
+        port: 6379,
+    }
+});
 
-            // Update to READY
-            store.status = 'READY';
-            store.url = `http://${store.name}.127.0.0.1.nip.io`;
+// Helper function to queue provisioning job to Orchestrator
+async function queueProvisioning(storeId: string, storeName: string, engine: string) {
+    // Queue job for the Orchestrator to pick up
+    await provisioningQueue.add('provision-store', {
+        storeId,
+        storeName,
+        engine: engine.toUpperCase(),
+    });
 
-            // Engine-specific configuration
-            if (store.engine === 'WOOCOMMERCE') {
-                store.adminUrl = `http://${store.name}.127.0.0.1.nip.io/wp-admin`;
-                store.adminUser = 'admin';
-                store.adminPass = generatePassword();
-            } else if (store.engine === 'MEDUSA') {
-                store.adminUrl = `http://${store.name}.127.0.0.1.nip.io/app`;
-                store.adminUser = 'admin@medusajs.com';
-                store.adminPass = generatePassword();
-            }
+    console.log(`✅ Queued provisioning job for ${storeName} (${engine})`);
 
-            store.updatedAt = new Date().toISOString();
-
-            // Add events
-            const storeEvents = events.get(storeId) || [];
-            storeEvents.push({
-                id: uuidv4(),
-                storeId,
-                event: 'PROVISIONING_COMPLETED',
-                message: `${store.engine} store provisioned successfully with sample products. Resources (CPU/Mem/PVC) allocated.`,
-                createdAt: new Date().toISOString(),
-            });
-            events.set(storeId, storeEvents);
-
-            auditLogs.push({
-                id: uuidv4(),
-                action: 'UPDATE_STORE',
-                resourceId: store.id,
-                resourceName: store.name,
-                details: `Provisioning completed. Store is READY.`,
-                timestamp: new Date().toISOString(),
-                status: 'SUCCESS'
-            });
-
-            console.log(`✅ ${store.engine} Store ${store.name} provisioned successfully!`);
-        }
-    }, 5000); // 5 seconds simulation
+    // Update store to PROVISIONING - orchestrator will update to READY when done
+    const store = stores.get(storeId);
+    if (store) {
+        store.status = 'PROVISIONING';
+        store.updatedAt = new Date().toISOString();
+    }
 }
 
 function generatePassword(): string {
@@ -135,7 +113,7 @@ app.get('/api/stores/:id', (req, res) => {
 });
 
 // Create store
-app.post('/api/stores', (req, res) => {
+app.post('/api/stores', async (req, res) => {
     const { name, engine, customDomain } = req.body;
 
     // Abuse Prevention: Max stores check
@@ -197,16 +175,62 @@ app.post('/api/stores', (req, res) => {
         id: uuidv4(),
         storeId: store.id,
         event: 'PROVISIONING_STARTED',
-        message: 'Store provisioning initiated. Validating resources...',
+        message: 'Store provisioning initiated. Queuing job to Orchestrator...',
         createdAt: new Date().toISOString(),
     }]);
 
-    // Start provisioning simulation
-    simulateProvisioning(store.id);
+    // Queue REAL provisioning job to Orchestrator
+    try {
+        await queueProvisioning(store.id, store.name, store.engine);
+    } catch (error: any) {
+        console.error(`Failed to queue provisioning job:`, error);
+        store.status = 'FAILED';
+        store.failureReason = 'Failed to queue provisioning job';
+    }
 
-    console.log(`📦 Creating store: ${name} (${engine})`);
+    console.log(`📦 Creating REAL store in Kubernetes: ${name} (${engine})`);
 
     res.status(201).json({ store });
+});
+
+// Update store (for orchestrator)
+app.patch('/api/stores/:id', (req, res) => {
+    const store = stores.get(req.params.id);
+    if (!store) {
+        return res.status(404).json({ error: 'Store not found' });
+    }
+
+    const { status, url, adminUrl, adminUser, adminPass, failureReason } = req.body;
+
+    if (status) store.status = status;
+    if (url) store.url = url;
+    if (adminUrl) store.adminUrl = adminUrl;
+    if (adminUser) store.adminUser = adminUser;
+    if (adminPass) store.adminPass = adminPass;
+    if (failureReason) store.failureReason = failureReason;
+
+    store.updatedAt = new Date().toISOString();
+
+    console.log(`✅ Updated store ${store.name}: status=${status || store.status}`);
+    res.json({ store });
+});
+
+// Add event (for orchestrator)
+app.post('/api/stores/:id/events', (req, res) => {
+    const { event, message, metadata } = req.body;
+
+    const storeEvents = events.get(req.params.id) || [];
+    storeEvents.push({
+        id: uuidv4(),
+        storeId: req.params.id,
+        event,
+        message,
+        metadata,
+        createdAt: new Date().toISOString(),
+    });
+    events.set(req.params.id, storeEvents);
+
+    res.status(201).json({ success: true });
 });
 
 // Delete store
@@ -366,8 +390,9 @@ function createDemoStores() {
     console.log('✅ Demo stores created!');
 }
 
-// Initialize demo data
-createDemoStores();
+// Initialize demo data - DISABLED for real provisioning
+// createDemoStores();
+console.log('📦 Starting with empty store list. Ready for real provisioning!');
 
 // Start server only if not in Vercel environment
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {

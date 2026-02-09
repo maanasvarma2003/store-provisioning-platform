@@ -27,8 +27,9 @@ class HelmClient {
 
         if (Object.keys(values).length > 0) {
             // Write values to temp file
-            const valuesFile = `/tmp/helm-values-${releaseName}.json`;
             const { writeFile } = await import('fs/promises');
+            const { tmpdir } = await import('os');
+            const valuesFile = `${tmpdir()}\\helm-values-${releaseName}.json`;
             await writeFile(valuesFile, valuesJson);
             command += ` --values ${valuesFile}`;
         }
@@ -39,7 +40,15 @@ class HelmClient {
 
         try {
             logger.info(`Installing Helm release: ${releaseName}`);
-            const { stdout, stderr } = await execAsync(command);
+
+            // Set environment for helm subprocess to include kubectl
+            const env = {
+                ...process.env,
+                KUBECONFIG: process.env.KUBECONFIG || `${process.env.USERPROFILE}\\.kube\\config`,
+                PATH: `${process.env.USERPROFILE}\\.k8s-tools;${process.env.PATH}`,
+            };
+
+            const { stdout, stderr } = await execAsync(command, { env });
 
             if (stdout) logger.info(`Helm install stdout: ${stdout}`);
             if (stderr) logger.warn(`Helm install stderr: ${stderr}`);
